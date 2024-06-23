@@ -39,6 +39,20 @@
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         }
+
+        #controlPanel {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            position: absolute;
+            bottom: 20px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +75,10 @@
         <input type="checkbox" id="randomize" name="randomize" checked><br>
         <button type="submit">Apply</button>
     </form>
+</div>
+<div id="controlPanel">
+    <button id="pauseButton">Pause</button>
+    <button id="rewindButton">Rewind</button>
 </div>
 
 <script>
@@ -208,24 +226,31 @@
 
     var wordsInterval;
     var holdInterval;
-
+    var wordHistory = [];
+    var currentIndex = 0;
+    var isPaused = false;
+    var currentWordBank;
     // Function to flash words with randomized selection
     function flashWords(speed, interval, randomize, currentWordBank) {
         var area = document.getElementById("flashArea");
-        var index = -1;
 
         clearInterval(wordsInterval); // Clear previous interval
         clearInterval(holdInterval); // Clear previous interval
 
         wordsInterval = setInterval(function() {
-
-            if (randomize) {
-                index = Math.floor(Math.random() * currentWordBank.length);
-            } else {
-                index++;
+            if (currentIndex >= wordHistory.length) {
+                var word;
+                if (randomize) {
+                    word = currentWordBank[Math.floor(Math.random() * currentWordBank.length)];
+                } else {
+                    word = currentWordBank[currentIndex % currentWordBank.length];
+                }
+                wordHistory.push(word);
             }
+            var word = wordHistory[currentIndex];
+            currentIndex++;
 
-            area.textContent = currentWordBank[index]; // Display the word
+            area.textContent = word; // Display the word
             area.style.opacity = 1; // Show the word
             holdInterval = setTimeout(function() {
                 area.style.opacity = 0; // Hide the word after holding time
@@ -243,7 +268,7 @@
             var interval = parseFloat(document.getElementById("interval").value);
             var randomize = document.getElementById("randomize").checked;
             var wordBank = document.getElementById("wordBank").value;
-            var currentWordBank;
+
             switch(wordBank) {
                 case "words1":
                     currentWordBank = words1;
@@ -264,10 +289,45 @@
                     currentWordBank = words1;
                     break;
             }
+            wordHistory = [];
+            currentIndex = 0;
+            isPaused = false;
+
 
             flashWords(speed, interval, randomize, currentWordBank);
             document.getElementById("overlay").style.display = "none"; // Hide the overlay
         });
+
+        document.getElementById("pauseButton").addEventListener("click", function() {
+            var speed = parseFloat(document.getElementById("speed").value);
+            var interval = parseFloat(document.getElementById("interval").value);
+            var randomize = document.getElementById("randomize").checked;
+            if (isPaused) {
+                flashWords(speed, interval, randomize, currentWordBank);
+                document.getElementById("pauseButton").textContent = "Pause";
+                isPaused = false;
+            } else {
+                clearInterval(wordsInterval);
+                clearInterval(holdInterval);
+                document.getElementById("pauseButton").textContent = "Resume";
+                isPaused = true;
+            }
+        });
+
+        document.getElementById("rewindButton").addEventListener("click", function() {
+            if (currentIndex > 1) {
+                currentIndex -= 1; // Move two steps back to show the previous word
+            } else if (currentIndex === 1) {
+                currentIndex = 0; // Show the first word again
+            }
+            if (isPaused) {
+                var area = document.getElementById("flashArea");
+                area.textContent = wordHistory[currentIndex];
+                area.style.opacity = 1; // Show the word
+            }
+        });
+
+
     };
 </script>
 </body>
