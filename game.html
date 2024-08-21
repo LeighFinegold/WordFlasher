@@ -54,6 +54,14 @@
             font-size: 20pt;
             font-weight: bold;
         }
+
+        #restartButton {
+            display: none;
+            margin-top: 90px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -62,9 +70,12 @@
 <div id="flashArea" class="flash"></div>
 <div id="summary"></div>
 
+
 <div id="controlPanel">
-    <button id="giveInButton">Give In!!</button>
+
+    <button id="startButton">Start Game</button>
 </div>
+<button id="restartButton">Restart Game</button>
 
 <script>
     const wordBanks = ["Words_1.txt", "Words_2.txt", "Words_3.txt", "Words_4.txt", "Words_5.txt"];
@@ -78,6 +89,7 @@
     const flashArea = document.getElementById("flashArea");
     const statusDisplay = document.getElementById("status");
     const summaryDisplay = document.getElementById("summary");
+    const restartButton = document.getElementById("restartButton");
 
     async function fetchWords(file) {
         const response = await fetch(file);
@@ -117,6 +129,11 @@
         updateStatus();
         flashWords();
         cycleSpeeds();
+
+        // Replace the Start Game button with the Give In button
+        const controlPanel = document.getElementById("controlPanel");
+        controlPanel.innerHTML = '<button id="giveInButton">Give In!!</button>';
+        document.getElementById("giveInButton").addEventListener("click", endGame);
     }
 
     async function cycleSpeeds() {
@@ -150,11 +167,23 @@
         statusDisplay.style.display = "none"; // Hide the status
         flashArea.style.display = "none"; // Hide the word display
         document.getElementById("controlPanel").style.display = "none"; // Hide the controls
+        restartButton.style.display = "block"; // Show the restart button
     }
 
-    document.getElementById("giveInButton").addEventListener("click", endGame);
+    function restartGame() {
+        // Reset the game state
+        summaryDisplay.style.display = "none"; // Hide the summary
+        restartButton.style.display = "none"; // Hide the restart button
+        statusDisplay.style.display = "block"; // Show the status
+        flashArea.style.display = "block"; // Show the word display
+        document.getElementById("controlPanel").style.display = "flex"; // Show the controls
 
-    startGame();
+        // Start a new game
+        startGame();
+    }
+
+    document.getElementById("startButton").addEventListener("click", startGame);
+    restartButton.addEventListener("click", restartGame);
 </script>
 </body>
 </html>
