@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Flasher Game</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .flash {
+            position: absolute;
+            top: 40%;
+            font-size: 32pt;
+            opacity: 0;
+        }
+
+        #status {
+            position: absolute;
+            top: 10px;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+
+        #controlPanel {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            position: absolute;
+            bottom: 20px;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #summary {
+            display: none;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+            font-size: 20pt;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="status">Word Bank: 1 | Speed: 1s</div>
+<div id="flashArea" class="flash"></div>
+<div id="summary"></div>
+
+<div id="controlPanel">
+    <button id="giveInButton">Give In!!</button>
+</div>
+
+<script>
+    const wordBanks = ["Words_1.txt", "Words_2.txt", "Words_3.txt", "Words_4.txt", "Words_5.txt"];
+    let currentWordBankIndex = 0;
+    let currentSpeed = 1;
+    const minSpeed = 0.4;
+    const speedDecrement = 0.1;
+    const interval = 0.8;
+    let wordsInterval, holdInterval, wordHistory = [], currentIndex = 0, isPaused = false;
+    let currentWordBank = [];
+    const flashArea = document.getElementById("flashArea");
+    const statusDisplay = document.getElementById("status");
+    const summaryDisplay = document.getElementById("summary");
+
+    async function fetchWords(file) {
+        const response = await fetch(file);
+        const text = await response.text();
+        return text.split('\n').map(word => word.trim()).filter(word => word.length > 0);
+    }
+
+    function updateStatus() {
+        statusDisplay.textContent = `Word Bank: ${currentWordBankIndex + 1} | Speed: ${currentSpeed.toFixed(1)}s`;
+    }
+
+    function flashWords() {
+        clearInterval(wordsInterval);
+        clearInterval(holdInterval);
+
+        wordsInterval = setInterval(() => {
+            if (currentIndex >= wordHistory.length) {
+                const word = currentWordBank[Math.floor(Math.random() * currentWordBank.length)];
+                wordHistory.push(word);
+            }
+            const word = wordHistory[currentIndex++];
+            flashArea.textContent = word;
+            flashArea.style.opacity = 1;
+            holdInterval = setTimeout(() => {
+                flashArea.style.opacity = 0;
+            }, currentSpeed * 1000);
+        }, (interval + currentSpeed) * 1000);
+    }
+
+    async function startGame() {
+        currentWordBankIndex = 0;
+        currentSpeed = 1;
+        currentWordBank = await fetchWords(wordBanks[currentWordBankIndex]);
+        wordHistory = [];
+        currentIndex = 0;
+        isPaused = false;
+        updateStatus();
+        flashWords();
+        cycleSpeeds();
+    }
+
+    async function cycleSpeeds() {
+        while (currentSpeed > minSpeed) {
+            await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
+            currentSpeed -= speedDecrement;
+            updateStatus();
+            flashWords();
+        }
+
+        currentWordBankIndex++;
+        if (currentWordBankIndex < wordBanks.length) {
+            currentSpeed = 1;
+            currentWordBank = await fetchWords(wordBanks[currentWordBankIndex]);
+            wordHistory = [];
+            currentIndex = 0;
+            updateStatus();
+            flashWords();
+            cycleSpeeds();
+        } else {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        clearInterval(wordsInterval);
+        clearInterval(holdInterval);
+        flashArea.style.opacity = 0; // Hide the current word
+        summaryDisplay.textContent = `You gave in at Word Bank: ${currentWordBankIndex + 1}, Speed: ${currentSpeed.toFixed(1)}s`;
+        summaryDisplay.style.display = "block"; // Show the summary on the screen
+        statusDisplay.style.display = "none"; // Hide the status
+        flashArea.style.display = "none"; // Hide the word display
+        document.getElementById("controlPanel").style.display = "none"; // Hide the controls
+    }
+
+    document.getElementById("giveInButton").addEventListener("click", endGame);
+
+    startGame();
+</script>
+</body>
+</html>
