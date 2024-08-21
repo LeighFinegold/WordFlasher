@@ -66,7 +66,7 @@
 </head>
 <body>
 
-<div id="status">Word Bank: 1 | Speed: 1s</div>
+<div id="status">Word Bank: 1 | Speed: 1.0s</div>
 <div id="flashArea" class="flash"></div>
 <div id="summary"></div>
 
@@ -86,6 +86,7 @@
     const interval = 0.8;
     let wordsInterval, holdInterval, wordHistory = [], currentIndex = 0, isPaused = false;
     let currentWordBank = [];
+    let isCyclingSpeeds = false;
     const flashArea = document.getElementById("flashArea");
     const statusDisplay = document.getElementById("status");
     const summaryDisplay = document.getElementById("summary");
@@ -126,6 +127,7 @@
         wordHistory = [];
         currentIndex = 0;
         isPaused = false;
+        isCyclingSpeeds = false; // Reset the cycling state
         updateStatus();
         flashWords();
         cycleSpeeds();
@@ -137,6 +139,9 @@
     }
 
     async function cycleSpeeds() {
+        if (isCyclingSpeeds) return; // Prevent multiple cycles from running
+        isCyclingSpeeds = true;
+
         while (currentSpeed > minSpeed) {
             await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds
             currentSpeed -= speedDecrement;
@@ -152,7 +157,8 @@
             currentIndex = 0;
             updateStatus();
             flashWords();
-            cycleSpeeds();
+            isCyclingSpeeds = false;
+            cycleSpeeds(); // Start the next cycle
         } else {
             endGame();
         }
