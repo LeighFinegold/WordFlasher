@@ -88,9 +88,6 @@
             justify-content: flex-start; /* Align the checkbox and label to the left */
             width: auto; /* Prevent the label from taking the full width */
         }
-
-
-
     </style>
 </head>
 <body>
@@ -101,18 +98,21 @@
 
 <div id="overlay">
     <form id="settingsForm">
+        <label for="category">Category:</label>
+        <select id="category" name="category">
+            <option value="tehillim">Tehillim</option>
+            <option value="tehillim_shvoh">Tehillim Shvoh</option>
+            <option value="gemora">Gemora</option>
+            <!-- Add more categories as needed -->
+        </select>
+        <label for="wordBank">Word Bank:</label>
+        <select id="wordBank" name="wordBank">
+            <!-- Word bank options will be populated dynamically -->
+        </select>
         <label for="speed">Speed (seconds):</label>
         <input type="number" id="speed" name="speed" min="0.1" step="0.1" value="1">
         <label for="interval">Interval (seconds):</label>
         <input type="number" id="interval" name="interval" min="0.1" step="0.1" value="1">
-        <label for="wordBank">Word Bank:</label>
-        <select id="wordBank" name="wordBank">
-            <option value="Words_1.txt">Words 1</option>
-            <option value="Words_2.txt">Words 2</option>
-            <option value="Words_3.txt">Words 3</option>
-            <option value="Words_4.txt">Words 4</option>
-            <option value="Words_5.txt">Words 5</option>
-        </select>
         <label for="randomize">Randomize:</label>
         <input type="checkbox" id="randomize" name="randomize" checked>
         <button type="submit">Apply</button>
@@ -125,55 +125,62 @@
 </div>
 
 <script>
+    const categories = {
+        "gemora": ["Words_1.txt"],
+        "tehillim_shvoh": ["Words_1.txt", "Words_2.txt"],
+        "tehillim": ["Words_1.txt", "Words_2.txt", "Words_3.txt", "Words_4.txt", "Words_5.txt"],
+        // Add more categories and their corresponding word files
+    };
+
+    const categoriesPath = 'categories';
+    let currentWordBank = [];
+    let wordsInterval, holdInterval;
+    let wordHistory = [];
+    let currentIndex = 0;
+    let isPaused = false;
 
     async function fetchWords(file) {
-        const response = await fetch(file);
-        const text = await response.text();
-        return text.split('\n').map(word => word.trim()).filter(word => word.length > 0);
+        try {
+            const response = await fetch(file);
+            const text = await response.text();
+            return text.split('\n').map(word => word.trim()).filter(word => word.length > 0);
+        } catch (error) {
+            console.error("Failed to fetch words:", error);
+            return [];
+        }
     }
 
-    var wordsInterval;
-    var holdInterval;
-    var wordHistory = [];
-    var currentIndex = 0;
-    var isPaused = false;
-    var currentWordBank = [];
-
-    function flashWords(speed, interval, randomize, currentWordBank) {
-        var area = document.getElementById("flashArea");
-
-        clearInterval(wordsInterval);
-        clearInterval(holdInterval);
-
-        wordsInterval = setInterval(function() {
-            if (currentIndex >= wordHistory.length) {
-                var word;
-                if (randomize) {
-                    word = currentWordBank[Math.floor(Math.random() * currentWordBank.length)];
-                } else {
-                    word = currentWordBank[currentIndex % currentWordBank.length];
-                }
-                wordHistory.push(word);
-            }
-            var word = wordHistory[currentIndex];
-            currentIndex++;
-
-            area.textContent = word;
-            area.style.opacity = 1;
-            holdInterval = setTimeout(function() {
-                area.style.opacity = 0;
-            }, speed * 1000);
-        }, (interval + speed) * 1000);
+    function populateWordBankOptions(category) {
+        const wordBankSelect = document.getElementById('wordBank');
+        wordBankSelect.innerHTML = '';
+        const wordBanks = categories[category];
+        wordBanks.forEach(file => {
+            const option = document.createElement('option');
+            option.value = `${categoriesPath}/${category}/${file}`;
+            option.textContent = file.replace('words_', 'Words ').replace('.txt', '');
+            wordBankSelect.appendChild(option);
+        });
     }
 
-    document.getElementById("settingsForm").addEventListener("submit", async function(event) {
+    document.getElementById('category').addEventListener('change', function () {
+        const selectedCategory = this.value;
+        populateWordBankOptions(selectedCategory);
+    });
+
+    document.getElementById("settingsForm").addEventListener("submit", async function (event) {
         event.preventDefault();
-        var speed = parseFloat(document.getElementById("speed").value);
-        var interval = parseFloat(document.getElementById("interval").value);
-        var randomize = document.getElementById("randomize").checked;
-        var wordBank = document.getElementById("wordBank").value;
+        const wordBank = document.getElementById('wordBank').value;
+        const speed = parseFloat(document.getElementById('speed').value);
+        const interval = parseFloat(document.getElementById('interval').value);
+        const randomize = document.getElementById('randomize').checked;
 
+        console.log(`Fetching words from: ${wordBank}`);
         currentWordBank = await fetchWords(wordBank);
+        if (currentWordBank.length === 0) {
+            console.error("Word bank is empty, cannot start animation.");
+            return;
+        }
+
         wordHistory = [];
         currentIndex = 0;
         isPaused = false;
@@ -182,10 +189,32 @@
         toggleOverlay();
     });
 
-    document.getElementById("pauseButton").addEventListener("click", function() {
-        var speed = parseFloat(document.getElementById("speed").value);
-        var interval = parseFloat(document.getElementById("interval").value);
-        var randomize = document.getElementById("randomize").checked;
+    function flashWords(speed, interval, randomize, currentWordBank) {
+        const area = document.getElementById("flashArea");
+
+        clearInterval(wordsInterval);
+        clearInterval(holdInterval);
+
+        wordsInterval = setInterval(function () {
+            if (currentIndex >= wordHistory.length) {
+                const word = randomize ?
+                    currentWordBank[Math.floor(Math.random() * currentWordBank.length)] :
+                    currentWordBank[currentIndex % currentWordBank.length];
+                wordHistory.push(word);
+            }
+            const word = wordHistory[currentIndex++];
+            area.textContent = word;
+            area.style.opacity = 1;
+            holdInterval = setTimeout(function () {
+                area.style.opacity = 0;
+            }, speed * 1000);
+        }, (interval + speed) * 1000);
+    }
+
+    document.getElementById("pauseButton").addEventListener("click", function () {
+        const speed = parseFloat(document.getElementById("speed").value);
+        const interval = parseFloat(document.getElementById("interval").value);
+        const randomize = document.getElementById("randomize").checked;
         if (isPaused) {
             flashWords(speed, interval, randomize, currentWordBank);
             document.getElementById("pauseButton").textContent = "Pause";
@@ -198,30 +227,30 @@
         }
     });
 
-    document.getElementById("rewindButton").addEventListener("click", function() {
+    document.getElementById("rewindButton").addEventListener("click", function () {
         if (currentIndex > 1) {
             currentIndex -= 1;
         } else if (currentIndex === 1) {
             currentIndex = 0;
         }
         if (isPaused) {
-            var area = document.getElementById("flashArea");
+            const area = document.getElementById("flashArea");
             area.textContent = wordHistory[currentIndex];
             area.style.opacity = 1;
         }
     });
 
     function toggleOverlay() {
-        var overlay = document.getElementById("overlay");
-        if (overlay.classList.contains("open")) {
-            overlay.classList.remove("open");
-        } else {
-            overlay.classList.add("open");
-        }
+        const overlay = document.getElementById("overlay");
+        overlay.classList.toggle("open");
     }
 
     document.getElementById("cogIcon").addEventListener("click", toggleOverlay);
-    toggleOverlay();
+
+    // Trigger initial category change to populate word bank options
+    document.getElementById('category').dispatchEvent(new Event('change'));
 </script>
+
+
 </body>
 </html>
