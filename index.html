@@ -122,13 +122,13 @@
 <div id="controlPanel">
     <button id="pauseButton">Pause</button>
     <button id="rewindButton">Rewind</button>
-</div>
+</div>git
 
 <script>
     const categories = {
         "gemora": ["Words_1.txt"],
-        "tehillim_shvoh": ["Words_1.txt", "Words_2.txt"],
-        "tehillim": ["Words_1.txt", "Words_2.txt", "Words_3.txt", "Words_4.txt", "Words_5.txt"],
+        "tehillim": ["Words_2 Letters.txt", "Words_3 Letters.txt", "Words_3-4 Letters.txt", "Words_4 Letters.txt","Words_5 Letters.txt", "Words_6 Letters.txt","Words_7 Letters.txt","Words_8-11 Letters.txt"],
+        "tehillim_shvoh": ["Words_שוא-נע(א).txt", "Words_שוא-נע(ב).txt", "Words_שוא-נע(ג1).txt", "Words_שוא-נע(ג2).txt", "Words_שוא-נע(ג3).txt", "Words_שוא-נע(ג4).txt", "Words_שוא-נע(ג5).txt", "Words_שוא-נע(ד).txt", "Words_שוה-נע(ה).txt" ],
         // Add more categories and their corresponding word files
     };
 
@@ -157,7 +157,7 @@
         wordBanks.forEach(file => {
             const option = document.createElement('option');
             option.value = `${categoriesPath}/${category}/${file}`;
-            option.textContent = file.replace('words_', 'Words ').replace('.txt', '');
+            option.textContent = file.replace('Words_', '').replace('.txt', '');
             wordBankSelect.appendChild(option);
         });
     }
