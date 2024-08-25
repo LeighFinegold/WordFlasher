@@ -150,6 +150,16 @@
         }
     }
 
+    async function fetchAllWords(files) {
+        try {
+            const allWords = await Promise.all(files.map(file => fetchWords(file)));
+            return allWords.flat();
+        } catch (error) {
+            console.error("Failed to fetch all words:", error);
+            return [];
+        }
+    }
+
     function populateWordBankOptions(category) {
         const wordBankSelect = document.getElementById('wordBank');
         wordBankSelect.innerHTML = '';
@@ -160,6 +170,11 @@
             option.textContent = file.replace('Words_', '').replace('.txt', '');
             wordBankSelect.appendChild(option);
         });
+
+        const allOption = document.createElement('option');
+        allOption.value = "All";
+        allOption.textContent = "All";
+        wordBankSelect.appendChild(allOption);
     }
 
     document.getElementById('category').addEventListener('change', function () {
@@ -174,8 +189,16 @@
         const interval = parseFloat(document.getElementById('interval').value);
         const randomize = document.getElementById('randomize').checked;
 
-        console.log(`Fetching words from: ${wordBank}`);
-        currentWordBank = await fetchWords(wordBank);
+        if (wordBank === "All") {
+            const selectedCategory = document.getElementById('category').value;
+            const files = categories[selectedCategory].map(file => `${categoriesPath}/${selectedCategory}/${file}`);
+            console.log(`Fetching all words from category: ${selectedCategory}`);
+            currentWordBank = await fetchAllWords(files);
+        } else {
+            console.log(`Fetching words from: ${wordBank}`);
+            currentWordBank = await fetchWords(wordBank);
+        }
+
         if (currentWordBank.length === 0) {
             console.error("Word bank is empty, cannot start animation.");
             return;
